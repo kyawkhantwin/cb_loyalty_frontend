@@ -1,0 +1,2 @@
+export { CreateCardPage } from './page';
+

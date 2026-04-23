@@ -1,0 +1,1 @@
+export { MerchantsPage } from './page';
