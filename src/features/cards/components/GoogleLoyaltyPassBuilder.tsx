@@ -1,11 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 import { Button, Card, Chip, Input, Label, TextArea, TextField, Separator  } from '@heroui/react';
 import {
    QrCode, RefreshCw
 
 } from 'lucide-react';
+import { useIssueCardMutation } from '../api/useIssueCardMutation';
 
 type LoyaltyQrData = {
   t: string;
@@ -52,7 +55,13 @@ function clampHexColor(value: string, fallback: string): string {
   return fallback;
 }
 
-export function GoogleLoyaltyPassBuilder() {
+interface GoogleLoyaltyPassBuilderProps {
+  platform?: string;
+}
+
+export function GoogleLoyaltyPassBuilder({ platform = 'Google' }: GoogleLoyaltyPassBuilderProps) {
+  const router = useRouter();
+  const issueMutation = useIssueCardMutation();
   const [state, setState] = React.useState<BuilderState>(() => ({
     issuerName: 'LoyaltyOS',
     programName: 'Loyalty Club',
@@ -65,7 +74,7 @@ export function GoogleLoyaltyPassBuilder() {
     exp: '20270423',
     heroImageUrl: '',
     logoUrl: '',
-    backgroundColor: '#0B1220',
+    backgroundColor: platform === 'Apple' ? '#000000' : platform === 'Samsung' ? '#060606' : '#0B1220',
     foregroundColor: '#FFFFFF',
     websiteUrl: 'https://example.com',
     supportEmail: 'support@example.com',
@@ -74,6 +83,9 @@ export function GoogleLoyaltyPassBuilder() {
 
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState<GenerateResponse | null>(null);
+  const [googleWalletLink, setGoogleWalletLink] = React.useState<string | null>(null);
+  const [googleWalletQr, setGoogleWalletQr] = React.useState<string | null>(null);
+  const [liveQrSvg, setLiveQrSvg] = React.useState<string | null>(null);
 
   const qrPayload: LoyaltyQrData = React.useMemo(
       () => ({
@@ -86,6 +98,28 @@ export function GoogleLoyaltyPassBuilder() {
       [state.cid, state.uid, state.memberLevel, state.memberCode, state.exp],
   );
 
+  // Live QR Generation for preview
+  useEffect(() => {
+    const generateLiveQr = async () => {
+      try {
+        // We use a simplified version for the live preview (unsigned)
+        const svg = await QRCode.toString(JSON.stringify(qrPayload), {
+          type: 'svg',
+          margin: 2,
+          width: 256,
+          color: {
+            dark: '#000000',
+            light: '#ffffff'
+          }
+        });
+        setLiveQrSvg(svg);
+      } catch (err) {
+        console.error('Live QR Gen Error:', err);
+      }
+    };
+    generateLiveQr();
+  }, [qrPayload]);
+
   async function onGenerateQr() {
     setLoading(true);
     setResult(null);
@@ -97,6 +131,57 @@ export function GoogleLoyaltyPassBuilder() {
       });
       const json = (await res.json()) as GenerateResponse;
       setResult(json);
+
+      if (json.ok) {
+        issueMutation.mutate({
+          memberId: state.uid,
+          memberName: `Member ${state.uid}`, // Use the UID for better identification
+          templateId: state.cid,
+          platform: (platform === 'Apple' || platform === 'Samsung' || platform === 'Google' ? platform : 'Google') as any,
+          balance: parseInt(state.pointsBalance),
+        });
+
+        // Automatically generate Google Wallet link if on Google platform
+        if (platform === 'Google') {
+           try {
+             const gwRes = await fetch('/api/wallet/google-save-link', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({
+                 issuerId: '3388000000022304918', // Demo Issuer ID
+                 classId: state.cid,
+                 objectId: `${state.cid}-${state.uid}`,
+                 programName: state.programName,
+                 issuerName: state.issuerName,
+                 userName: `Member ${state.uid}`,
+                 userId: state.uid,
+                 points: state.pointsBalance,
+                 tier: state.memberLevel,
+                 barcodeValue: state.uid
+               }),
+             });
+             const gwJson = await gwRes.json();
+             if (gwJson.ok) {
+               setGoogleWalletLink(gwJson.saveLink);
+               setGoogleWalletQr(gwJson.qrSvg);
+
+               setTimeout(() => {
+                 if (window.confirm('Card issued successfully! Go to card index?')) {
+                   router.push('/cards');
+                 }
+               }, 500);
+             }
+           } catch (gwErr) {
+             console.error('Failed to auto-generate Google Wallet link', gwErr);
+           }
+        } else {
+           setTimeout(() => {
+             if (window.confirm('Card issued successfully! Go to card index?')) {
+               router.push('/cards');
+             }
+           }, 500);
+        }
+      }
     } catch (err) {
       setResult({ ok: false, error: err instanceof Error ? err.message : 'Failed to generate' });
     } finally {
@@ -115,8 +200,8 @@ export function GoogleLoyaltyPassBuilder() {
         <div className="lg:col-span-7 xl:col-span-8 space-y-8">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-extrabold tracking-tight">Pass Builder</h2>
-              <p className="text-default-500 mt-1 text-sm">Configure your loyalty card payload and generate a test QR code.</p>
+              <h2 className="text-3xl font-extrabold tracking-tight">{platform} Pass Designer</h2>
+              <p className="text-default-500 mt-1 text-sm">Configure your {platform} loyalty card payload and generate a test QR code.</p>
             </div>
             <Chip variant="primary" color="warning" size="sm" className="uppercase font-bold tracking-wider">
               Test Mode
@@ -201,24 +286,38 @@ export function GoogleLoyaltyPassBuilder() {
                 <TextArea placeholder="Enter terms here..." />
               </TextField>
             </FormSection>
+
+            {platform === 'Google' && (
+              <FormSection title="Google Wallet Integration" description="Automatic asset generation.">
+                <div className="md:col-span-2 space-y-2">
+                   <p className="text-xs text-default-500 italic">Google Wallet assets (Add to Wallet button and scannable QR) will be automatically generated and displayed in the results area once you click 'Issue & Save Card'.</p>
+                </div>
+              </FormSection>
+            )}
           </div>
 
           {/* Action Area */}
           <Card className="bg-default-50 border border-default-200 shadow-none p-6 rounded-3xl">
             <div className="flex flex-col sm:flex-row gap-6 sm:items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold">Generate Pass Payload</h3>
-                <p className="text-sm text-default-500">Calls `/api/qr/generate` and embeds the scan URL into a QR.</p>
+                <h3 className="text-lg font-bold">Generate {platform} Pass</h3>
+                <p className="text-sm text-default-500">Generates a cryptographically signed pass payload.</p>
               </div>
               <Button
                   variant="primary"
                   size="lg"
-                  className="font-bold shadow-lg px-8 rounded-2xl"
+                  className="font-bold shadow-lg px-8 rounded-2xl gap-2 h-14"
                   onPress={onGenerateQr}
                   isDisabled={loading}
-
               >
-                {loading ? <RefreshCw className="animate-spin" size={18} /> : <QrCode size={18} />}
+                {loading ? (
+                  <RefreshCw className="animate-spin" size={20} />
+                ) : (
+                  <>
+                    <QrCode size={20} />
+                    <span>Issue Card</span>
+                  </>
+                )}
               </Button>
             </div>
 
@@ -236,6 +335,53 @@ export function GoogleLoyaltyPassBuilder() {
                   </div>
                 </div>
             )}
+
+            {googleWalletLink && (
+              <div className="mt-8 pt-8 border-t border-default-200 space-y-6">
+                <div>
+                  <h4 className="text-sm font-bold mb-4 uppercase tracking-wider text-default-400">Google Wallet Output</h4>
+                  <div className="flex flex-col md:flex-row gap-8 items-start">
+                    <div className="space-y-4 shrink-0">
+                      <a href={googleWalletLink} target="_blank" rel="noopener noreferrer" className="block transition-transform hover:scale-105 active:scale-95">
+                        <img
+                          src="https://developers.google.com/static/wallet/images/add-to-google-wallet-button.png"
+                          alt="Add to Google Wallet"
+                          className="h-12"
+                        />
+                      </a>
+                      
+                      {googleWalletQr && (
+                        <div className="p-6 bg-white rounded-[2.5rem] border border-default-200 shadow-xl inline-flex flex-col items-center justify-center w-full max-w-[240px]">
+                          <div 
+                            className="w-full aspect-square flex items-center justify-center overflow-hidden [&>svg]:w-full [&>svg]:h-full [&>svg]:block" 
+                            dangerouslySetInnerHTML={{ __html: googleWalletQr }} 
+                          />
+                          <div className="w-full h-px bg-default-100 my-4" />
+                          <p className="text-[10px] text-center font-black text-default-600 uppercase tracking-[0.15em] leading-tight">
+                            Scan to save<br/>on mobile
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0 w-full space-y-6">
+                       <div>
+                         <Label className="text-[10px] font-black text-default-400 uppercase tracking-widest">Secure Save Link</Label>
+                         <div className="break-all font-mono text-[10px] bg-background border border-default-200 rounded-xl p-3 shadow-inner mt-1">
+                          {googleWalletLink}
+                        </div>
+                       </div>
+                       
+                       <div className="p-4 rounded-2xl bg-primary-50 border border-primary-100">
+                         <p className="text-xs text-primary-700 leading-relaxed">
+                           <strong>Developer Tip:</strong> This link contains a signed JWT. In production, ensure your Service Account has "Developer" or "Admin" access in the Google Pay & Wallet Console.
+                         </p>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
 
@@ -244,7 +390,7 @@ export function GoogleLoyaltyPassBuilder() {
           <div className="sticky top-28 space-y-6">
             <div className="flex items-center gap-2">
               <div className="h-px bg-default-200 flex-1" />
-              <span className="text-[10px] font-black text-default-400 uppercase tracking-[0.2em]">Live Preview</span>
+              <span className="text-[10px] font-black text-default-400 uppercase tracking-[0.2em]">{platform} Preview</span>
               <div className="h-px bg-default-200 flex-1" />
             </div>
 
@@ -304,13 +450,13 @@ export function GoogleLoyaltyPassBuilder() {
                 </div>
 
                 <div className="rounded-[32px] bg-white text-black p-6 flex flex-col items-center justify-center min-h-[220px] shadow-2xl">
-                  {success?.qrSvg ? (
-                      <div className="w-62 h-62" dangerouslySetInnerHTML={{ __html: success.qrSvg }} />
+                  {success?.qrSvg || liveQrSvg ? (
+                      <div className="w-62 h-62" dangerouslySetInnerHTML={{ __html: success?.qrSvg || liveQrSvg || '' }} />
                   ) : (
                       <div className="flex flex-col items-center gap-4 opacity-30">
                         <QrCode size={48} strokeWidth={1.5} />
                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center leading-relaxed">
-                      Generate QR<br/>to preview pass
+                      Generating...
                     </span>
                       </div>
                   )}
@@ -321,7 +467,7 @@ export function GoogleLoyaltyPassBuilder() {
                 </div>
               </div>
             </div>
-            <p className="text-center text-xs text-default-400">Preview represents a standard Google Wallet loyalty pass layout.</p>
+            <p className="text-center text-xs text-default-400">Preview represents a standard {platform} loyalty pass layout.</p>
           </div>
         </div>
       </div>

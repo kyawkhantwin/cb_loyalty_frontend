@@ -1,30 +1,32 @@
 'use client';
 
 import React from 'react';
-// V3: Import from the main consolidated package
 import {
   Card,
   Avatar,
-  Chip
+  Chip,
+  Button
 } from "@heroui/react";
-import { MapPin, ArrowUpRight } from "lucide-react";
+import { MapPin, ArrowUpRight, Edit2, Trash2 } from "lucide-react";
+import { Merchant } from '../types';
 
 interface MerchantCardProps {
-  name: string;
-  branches: number;
-  category: string;
+  merchant: Merchant;
+  onEdit?: (merchant: Merchant) => void;
+  onDelete?: (id: string) => void;
 }
 
-export const MerchantCard = ({ name, branches, category }: MerchantCardProps) => {
+export const MerchantCard = ({ merchant, onEdit, onDelete }: MerchantCardProps) => {
+  const { name, branches, category, status } = merchant;
   return (
       <Card
-          // V3 maintains isPressable but handles the RAC "press" state internally
           className="border-none bg-background shadow-sm hover:shadow-md transition-all group"
       >
         <Card.Content className="p-6 flex flex-row items-center gap-6">
           <Avatar
               size="lg"
               className="bg-default-100 text-default-600 font-bold"
+              name={name}
           />
 
           <div className="flex-1 min-w-0">
@@ -32,12 +34,17 @@ export const MerchantCard = ({ name, branches, category }: MerchantCardProps) =>
               <h3 className="text-lg font-bold truncate text-default-900">
                 {name}
               </h3>
-              {/* In v3, ensure color matches your updated theme config */}
               <Chip
                   size="sm"
                   variant="secondary"
               >
                 {category}
+              </Chip>
+              <Chip
+                  size="sm"
+                  variant={status === 'Active' ? 'primary' : 'default'}
+              >
+                {status}
               </Chip>
             </div>
 
@@ -47,8 +54,27 @@ export const MerchantCard = ({ name, branches, category }: MerchantCardProps) =>
             </div>
           </div>
 
-          <div className="p-3 rounded-full bg-default-50 text-default-400 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-            <ArrowUpRight size={20} />
+          <div className="flex items-center gap-2">
+            <Button
+                isIconOnly
+                variant="ghost"
+                size="sm"
+                onPress={() => onEdit?.(merchant)}
+            >
+                <Edit2 size={16} />
+            </Button>
+            <Button
+                isIconOnly
+                variant="ghost"
+                size="sm"
+                className="text-danger"
+                onPress={() => onDelete?.(merchant.id)}
+            >
+                <Trash2 size={16} />
+            </Button>
+            <div className="p-3 rounded-full bg-default-50 text-default-400 group-hover:bg-primary group-hover:text-primary-foreground transition-colors ml-2">
+                <ArrowUpRight size={20} />
+            </div>
           </div>
         </Card.Content>
       </Card>

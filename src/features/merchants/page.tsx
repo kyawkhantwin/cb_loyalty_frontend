@@ -1,54 +1,85 @@
 'use client';
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
     Breadcrumbs,
-    Button
+    Button,
+    Tabs
 } from "@heroui/react";
-import { Plus } from "lucide-react";
-import { MerchantCard } from "./components/MerchantCard";
+import { Plus, Store, Users, DollarSign, Key } from "lucide-react";
+import { MerchantDirectory, MerchantDirectoryHandle } from "./sections/MerchantDirectory";
+import { StaffManagement } from "./sections/StaffManagement";
+import { SettlementDashboard } from "./sections/SettlementDashboard";
+import { TerminalKeys } from "./sections/TerminalKeys";
 
-const MERCHANTS = [
-    { name: 'Coffee House #12', branches: 4, category: 'Food & Drink' },
-    { name: 'Urban Outfitters', branches: 12, category: 'Retail' },
-    { name: 'FitLife Gym', branches: 2, category: 'Health' },
-];
+export const MerchantsPage = () => {
+    const directoryRef = useRef<MerchantDirectoryHandle>(null);
 
-export const MerchantsPage = () => (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="flex flex-col gap-4">
-            {/* V3 Breadcrumbs: uses BreadcrumbItem export directly */}
-            <Breadcrumbs
-            >
-                <Breadcrumbs.Item href="/">Dashboard</Breadcrumbs.Item>
-                <Breadcrumbs.Item >Merchants</Breadcrumbs.Item>
-            </Breadcrumbs>
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col gap-4">
+                <Breadcrumbs>
+                    <Breadcrumbs.Item href="/">Dashboard</Breadcrumbs.Item>
+                    <Breadcrumbs.Item >Merchants</Breadcrumbs.Item>
+                </Breadcrumbs>
 
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-                <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-default-900">
-                        Merchant Registry
-                    </h1>
-                    <p className="text-default-500 text-lg">
-                        Profiles for partner businesses and issuance nodes.
-                    </p>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                    <div>
+                        <h1 className="text-4xl font-extrabold tracking-tight text-default-900">
+                            Merchant Ecosystem
+                        </h1>
+                        <p className="text-default-500 text-lg">
+                            Manage partner businesses, settlement nodes, and staff access.
+                        </p>
+                    </div>
+
+                    <Button
+                        size="lg"
+                        className="font-bold shadow-lg shadow-primary/20"
+                        onPress={() => directoryRef.current?.openCreateModal()}
+                    >
+                        <Plus size={20} />
+                        Add Merchant
+                    </Button>
                 </div>
-
-                <Button
-                    size="lg"
-                    className="font-bold shadow-lg shadow-primary/20"
-                    onPress={() => console.log("Add Merchant")}
-                >
-                    <Plus size={20} />
-                    Add Merchant
-                </Button>
             </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {MERCHANTS.map((m) => (
-                <MerchantCard key={m.name} {...m} />
-            ))}
+            <Tabs variant="underlined" className="w-full border-b border-divider">
+                <Tabs.List className="gap-6 h-12">
+                    <Tabs.Tab id="directory" textValue="Directory" className="flex items-center gap-2 px-1">
+                        <Store size={18} />
+                        <span>Merchant Registry</span>
+                    </Tabs.Tab>
+                    <Tabs.Tab id="staff" textValue="Staff" className="flex items-center gap-2 px-1">
+                        <Users size={18} />
+                        <span>Staff Accounts</span>
+                    </Tabs.Tab>
+                    <Tabs.Tab id="settlements" textValue="Settlements" className="flex items-center gap-2 px-1">
+                        <DollarSign size={18} />
+                        <span>Settlements</span>
+                    </Tabs.Tab>
+                    <Tabs.Tab id="keys" textValue="API Keys" className="flex items-center gap-2 px-1">
+                        <Key size={18} />
+                        <span>Terminal Keys</span>
+                    </Tabs.Tab>
+                </Tabs.List>
+
+                <Tabs.Panel id="directory" className="py-8">
+                    <MerchantDirectory ref={directoryRef} />
+                </Tabs.Panel>
+                
+                <Tabs.Panel id="staff" className="py-8">
+                    <StaffManagement />
+                </Tabs.Panel>
+
+                <Tabs.Panel id="settlements" className="py-8">
+                    <SettlementDashboard />
+                </Tabs.Panel>
+
+                <Tabs.Panel id="keys" className="py-8">
+                    <TerminalKeys />
+                </Tabs.Panel>
+            </Tabs>
         </div>
-    </div>
-);
+    );
+};

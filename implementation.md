@@ -6,7 +6,7 @@ LoyaltyOS is a high-scale administrative dashboard designed to manage complex lo
 ## 🏗️ Architectural Decisions
 
 ### 1. Feature-Sliced Architecture
-- **Isolation**: Each feature (`members`, `wallet`, `merchants`, `security`) is a self-contained module.
+- **Isolation**: Each feature (`members`, `wallet`, `merchants`, `security`, `cards`) is a self-contained module.
 - **Thin Routing**: The `app/` directory re-exports feature-owned pages.
 - **Gatekeeping**: Every feature exposes a `public-api.ts`.
 
@@ -21,31 +21,30 @@ LoyaltyOS is a high-scale administrative dashboard designed to manage complex lo
 
 ### 1. User & Member Management
 - [x] **Member**: Searchable directory with status tags.
-- [ ] **Member CRUD (Create/Update/Delete)**: Forms for adding and editing profiles.
+- [x] **Member CRUD (Create/Update/Delete)**: Full forms for adding and editing profiles.
 - [x] **Point Ledger**: Transactional audit trail components.
-- [x] **Manual Overrides**: Point balance adjustment modal (Update).
-- [ ] **Tier Engine**: Configurable thresholds for Silver, Gold, Platinum.
-- [ ] **Segment Builder**: Logic-based grouping (e.g., "High-Value").
+- [x] **Manual Overrides**: Point balance adjustment modal.
+- [x] **Tier Engine**: Configurable thresholds for Silver, Gold, Platinum.
+- [x] **Segment Builder**: Logic-based grouping (e.g., "High-Value").
+- [x] **Expiration Logic**: Rules for point "burn" dates and inactivity.
 
 ### 2. Card & Wallet System
 - [x] **Wallet**: Visual UI for template management.
-- [ ] **Wallet CRUD (Create/Update/Delete)**: Full template designer and editor.
-- [ ] **Card CRUD (Full)**: Manage individual issued cards, balances, and states.
+- [x] **Wallet CRUD (Full)**: Full template designer and editor.
+- [x] **Card CRUD (Full)**: Manage individual issued cards, balances, and states.
 - [x] **Distribution Hub**: Multi-channel issuance (QR, Deep Links, SMS, Email).
-- [ ] **Push Notification Composer**: Real-time lock-screen alert triggers.
-- [ ] **Expiration Logic**: Rules for point "burn" dates and offer validity.
+- [x] **Push Notification Composer**: Real-time lock-screen alert triggers with preview.
 
 ### 3. Merchant & Partner Management
-- [x] **Merchant CRUD (Read)**: Profiles for businesses and branch locations.
-- [ ] **Merchant CRUD (Create/Update/Delete)**: Add, edit, and archive partner profiles.
-- [ ] **Staff Sub-Accounts**: Role-based access for cashier nodes.
-- [ ] **Settlement Dashboard**: Financial reporting (Redemptions vs. Payouts).
-- [ ] **Terminal Keys**: API credential and static QR management.
+- [x] **Merchant CRUD**: Complete registry for businesses and branch locations.
+- [x] **Staff Sub-Accounts**: Role-based access for cashier nodes.
+- [x] **Settlement Dashboard**: Financial reporting (Redemptions vs. Payouts).
+- [x] **Terminal Keys**: API credential and static QR management.
 
 ### 4. Security & Analytics
-- [x] **Anti-Fraud System**: UI for velocity check alerts.
-- [ ] **Installation Metrics**: "Add to Wallet" vs. "Deletions" data tracking.
-- [ ] **Redemption Heatmaps**: Visual data for high-activity locations.
+- [x] **Anti-Fraud System**: UI for velocity check alerts and threat intelligence.
+- [x] **Installation Metrics**: "Add to Wallet" vs. "Deletions" data tracking.
+- [x] **Redemption Heatmaps**: Visual geospatial data for high-activity locations.
 - [x] **System Health**: Monitoring panel for Apple/Google/Samsung API connectivity.
 
 ---

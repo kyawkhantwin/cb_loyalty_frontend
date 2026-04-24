@@ -89,5 +89,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     referer: typeof req.headers.referer === 'string' ? req.headers.referer : null,
   });
 
-  return res.status(200).json({ ok: true, tokenId: payload.tokenId, data: payload.data });
+  return res.status(200).json({ ok: true });
 }

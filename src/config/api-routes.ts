@@ -14,6 +14,7 @@ export const API_ROUTES = {
   },
   merchants: {
     list: '/merchants',
+    detail: (id: string) => `/merchants/${id}`,
   },
 } as const;
 
