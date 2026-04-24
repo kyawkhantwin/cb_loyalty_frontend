@@ -3,8 +3,8 @@
 import React from 'react';
 import { Button, Card, Chip, Input, Label, TextArea, TextField, Separator  } from '@heroui/react';
 import {
-  Image as ImageIcon, QrCode, RefreshCw, Building, Tag, CreditCard,
-  Hash, User, Award, Key, Coins, Calendar, Palette, Globe, Mail
+   QrCode, RefreshCw
+
 } from 'lucide-react';
 
 type LoyaltyQrData = {
@@ -232,7 +232,7 @@ export function GoogleLoyaltyPassBuilder() {
                 <div className="mt-6 space-y-2">
                   <Label className="text-[10px] font-black text-default-400 uppercase tracking-widest">Generated Scan URL</Label>
                   <div className="break-all font-mono text-xs bg-background border border-default-200 rounded-2xl p-4 shadow-inner">
-                    {success.scanUrl}
+                    {success.token}
                   </div>
                 </div>
             )}

@@ -11,6 +11,18 @@ export type QrIssuedRecord = {
 export type QrScanRecord = {
   tokenId: string;
   scannedAt: string;
+  t?: string;
+  cid?: string;
+  uid?: string;
+  member?: {
+    level?: string;
+    code?: string;
+    name?: string;
+  };
+  merchantId?: string;
+  merchantName?: string;
+  merchantBranchId?: string;
+  scannedByDeviceId?: string;
   ip: string | null;
   userAgent: string | null;
   referer: string | null;
@@ -32,6 +44,25 @@ async function appendJsonl(filePath: string, record: unknown): Promise<void> {
   await fs.appendFile(filePath, line, 'utf8');
 }
 
+async function readJsonl<T>(filePath: string): Promise<T[]> {
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    const lines = raw.split('\n').filter(Boolean);
+    const records: T[] = [];
+    for (const line of lines) {
+      try {
+        records.push(JSON.parse(line) as T);
+      } catch {
+        // ignore malformed lines
+      }
+    }
+    return records;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException | null)?.code === 'ENOENT') return [];
+    throw err;
+  }
+}
+
 export async function logQrIssued(record: QrIssuedRecord): Promise<void> {
   writeLock = writeLock.then(() => appendJsonl(issuedPath, record));
   return writeLock;
@@ -42,3 +73,8 @@ export async function logQrScan(record: QrScanRecord): Promise<void> {
   return writeLock;
 }
 
+export async function readQrScans(options?: { limit?: number }): Promise<QrScanRecord[]> {
+  const limit = Math.max(1, Math.min(5000, options?.limit ?? 200));
+  const all = await readJsonl<QrScanRecord>(scansPath);
+  return all.slice(-limit).reverse();
+}

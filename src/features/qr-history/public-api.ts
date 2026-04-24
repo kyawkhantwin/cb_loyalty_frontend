@@ -1,0 +1,2 @@
+export { QrHistoryPage } from './page';
+

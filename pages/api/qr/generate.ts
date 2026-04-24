@@ -11,6 +11,7 @@ type LoyaltyQrData = {
   member?: {
     level?: string;
     code?: string;
+    name?: string;
   };
   exp?: string;
   sig?: string;
@@ -90,13 +91,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const signedData: LoyaltyQrData = { ...unsigned, sig };
 
   const token = createSignedQrToken({ tokenId, createdAt, expiresAt, data: signedData });
-  const scanUrl = encodeURIComponent(token)
 
   await logQrIssued({ tokenId, createdAt, expiresAt, data: signedData as unknown as Record<string, unknown> });
 
   let qrSvg: string | null = null;
   try {
-    qrSvg = await QRCode.toString(scanUrl, { type: 'svg', margin: 2, width: 256, errorCorrectionLevel: 'M' });
+    qrSvg = await QRCode.toString(token, { type: 'svg', margin: 2, width: 256, errorCorrectionLevel: 'M' });
   } catch {
     qrSvg = null;
   }
@@ -105,7 +105,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ok: true,
     tokenId,
     token,
-    scanUrl,
+    scanEndpoint: '/api/qr/scan',
     data: signedData,
     qrSvg,
   });

@@ -58,7 +58,7 @@ export const MemberDirectory = () => {
             <Table.Content aria-label="Members Directory">
               <Table.Header columns={DIRECTORY_COLUMNS}>
                 {(column) => (
-                    <Table.Column id={column.uid}>
+                    <Table.Column id={column.uid} isRowHeader={column.uid === 'name'}>
                       {column.name}
                     </Table.Column>
                 )}
